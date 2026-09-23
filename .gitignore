@@ -1,15 +1,20 @@
-data/bhili/
-upload_bhili/
-upload_bhili_model/
-upload/
-upload_model/
-tmp/
 .venv/
 __pycache__/
 *.pyc
 .env
+
+# generated corpora and caches
+data/bitext/
+data/bhili/
 data/hf-cache/
 data/*.log
-data/current_job.txt
-data/job*.status
+tmp/
 training_output/
+logs/
+
+# staging dirs for Hub uploads
+upload*/
+
+# scratch
+o.json
+opus.json
