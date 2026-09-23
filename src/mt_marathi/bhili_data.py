@@ -1,33 +1,10 @@
-"""Build the Marathi<->Bhili training mixture and diagnostic evaluation sets.
+"""Build the Marathi/Bhili training mixture and the held-out evaluation sets.
 
-The corpus is AI Kosh's Dehwali Bhili Krishi Darshini: 21,622 validated
-Marathi/Bhili sentence pairs from agricultural extension material. Two measured
-properties of it drive everything here.
-
-**Numerals carry two conflicting conventions.** 44.6% of source sentences
-contain a digit. 83.6% of references preserve the source numerals, 9.5%
-verbalise them (20 -> वीस, 800 -> आठहोव) and 6.9% alter them. Verbalisation is a
-legitimate style in Bhili prose, not corruption -- but the served prompt
-contract is frozen (one user turn, target language only, no system message), so
-there is no channel through which to request one style or the other. With both
-present in training the model must guess, and will be wrong on roughly a tenth
-of numeral sentences regardless of how well it is trained. That is an
-information problem, not a modelling one, so the only fix is to make the
-training signal single-valued.
-
-**A copy prior is induced by the short bucket.** Exact-copy rate is 33% at 1-2
-source words, 25% for short non-numeric segments, and 1.2% at 21+ words. Bhili
-is lexically close to Marathi, so "echo short inputs" is a cheap rule that is
-right a third of the time on this distribution -- and catastrophically wrong on
-the greetings and courtesy phrases the corpus never contains (धन्यवाद, नमस्कार,
-स्वागत: zero occurrences each).
-
-Mitigations applied here, in order:
-  1. split by para_id BEFORE any augmentation, so synthesised rows cannot leak
-  2. normalise digit script to the source's, removing one axis of ambiguity
-  3. quarantine verbalised pairs out of the main mixture
-  4. numeral-substitution augmentation -- form-preserving, so guaranteed correct
-  5. drop trivial short copies and repopulate from conversational auxiliary data
+Two properties of the corpus drive the choices here. Numerals carry two
+conflicting conventions (83.6% preserved, 9.5% verbalised, 6.9% altered) and the
+prompt contract has no channel to request one, so the signal has to be made
+single-valued. And exact-copy rate runs 33% at one or two source words against
+1.2% at twenty-plus, which is enough for LoRA to learn "echo short inputs".
 """
 
 from __future__ import annotations
@@ -37,6 +14,7 @@ import csv
 import json
 import random
 import re
+from collections import Counter
 from pathlib import Path
 
 DEVA_DIGITS = "०१२३४५६७८९"
@@ -46,7 +24,7 @@ NUM_RE = re.compile(r"\d+(?:\.\d+)?")
 
 
 def numerals(text: str) -> list[str]:
-    """Ordered numerals, script-normalised, so comparisons ignore digit script."""
+    """Ordered numerals, script-normalised so comparisons ignore digit script."""
     return NUM_RE.findall(text.translate(TO_ASCII))
 
 
@@ -57,20 +35,11 @@ def source_digit_script(text: str) -> str:
 
 
 def match_digit_script(text: str, script: str) -> str:
-    """Rewrite digits in `text` into `script`.
-
-    One of the two ambiguity axes is which script the target should use. The
-    corpus disagrees with itself (Marathi side ~7.8k Devanagari vs ~1.9k ASCII;
-    Bhili side ~6.0k vs ~2.9k), and the auxiliary Hindi-Bhili corpus is almost
-    entirely ASCII -- the opposite convention. Mixing without normalising first
-    makes the inconsistency worse, so we align the target to the source and
-    leave the choice of global convention to a post-processing step.
-    """
     return text.translate(TO_DEVA if script == "deva" else TO_ASCII)
 
 
 def classify(src: str, tgt: str) -> str:
-    """Which numeral policy does this pair demonstrate?"""
+    """Which numeral policy a pair demonstrates."""
     s, t = numerals(src), numerals(tgt)
     if not s:
         return "no_numeral"
@@ -82,12 +51,11 @@ def classify(src: str, tgt: str) -> str:
 
 
 def substitute_numerals(src: str, tgt: str, rng: random.Random) -> tuple[str, str] | None:
-    """Replace each numeral with a sampled value on BOTH sides simultaneously.
+    """Swap every numeral for a sampled value on both sides at once.
 
-    Only valid where the numeral sequences already agree: the substitution is
-    then form-preserving, so the new pair is correct by construction. This is
-    the one augmentation here that needs no external data and introduces no
-    noise, and it covers magnitudes and formats the corpus never contained.
+    Only valid where the numeral sequences already agree; the substitution is
+    then form-preserving and the new pair is correct by construction. Returns
+    None rather than guessing when the sides disagree.
     """
     s_nums = numerals(src)
     if not s_nums or s_nums != numerals(tgt):
@@ -104,17 +72,30 @@ def substitute_numerals(src: str, tgt: str, rng: random.Random) -> tuple[str, st
             new = str(rng.randint(100, 999))
         else:
             new = str(rng.randint(1000, 999999))
-        old_src = old if script == "ascii" else old.translate(TO_DEVA)
-        new_src_form = new if script == "ascii" else new.translate(TO_DEVA)
-        # Replace one occurrence at a time so repeated values stay aligned.
-        new_src = new_src.replace(old_src, new_src_form, 1)
+        old_form = old if script == "ascii" else old.translate(TO_DEVA)
+        new_form = new if script == "ascii" else new.translate(TO_DEVA)
+        new_src = new_src.replace(old_form, new_form, 1)
         for variant in (old, old.translate(TO_DEVA)):
             if variant in new_tgt:
-                new_tgt = new_tgt.replace(variant, new_src_form, 1)
+                new_tgt = new_tgt.replace(variant, new_form, 1)
                 break
-    if numerals(new_src) != numerals(new_tgt):
-        return None
-    return new_src, new_tgt
+
+    return (new_src, new_tgt) if numerals(new_src) == numerals(new_tgt) else None
+
+
+def load_pairs(tsv: Path) -> list[tuple[str, str, str]]:
+    rows = csv.DictReader(tsv.open(encoding="utf-8"), delimiter="\t")
+    pairs = [(r["para_id"], r["sentence_marathi"].strip(),
+              r["validated_translation_Dehwali_Bhili"].strip()) for r in rows]
+    return [p for p in pairs if p[1] and p[2]]
+
+
+def write_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"  {len(rows):>7,} -> {path}")
 
 
 def main() -> None:
@@ -129,78 +110,69 @@ def main() -> None:
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
-    rows = list(csv.DictReader(args.tsv.open(encoding="utf-8"), delimiter="\t"))
-    pairs = [(r["para_id"], r["sentence_marathi"].strip(),
-              r["validated_translation_Dehwali_Bhili"].strip()) for r in rows]
-    pairs = [p for p in pairs if p[1] and p[2]]
+    pairs = load_pairs(args.tsv)
 
-    # ---- split by paragraph, before augmentation, so nothing leaks ----------
+    # Split by paragraph before augmenting, or substituted rows leak into test.
     paras = sorted({p[0] for p in pairs})
     rng.shuffle(paras)
     held = set(paras[: args.heldout_paras])
     train = [p for p in pairs if p[0] not in held]
     test = [p for p in pairs if p[0] in held]
-    print(f"  paragraphs {len(paras):,} -> held out {len(held):,}")
-    print(f"  train {len(train):,} sentences | test {len(test):,} sentences")
+    print(f"  {len(paras):,} paragraphs, {len(held):,} held out")
+    print(f"  train {len(train):,} / test {len(test):,} sentences")
 
-    # ---- numeral policy census ---------------------------------------------
-    from collections import Counter
     census = Counter(classify(m, b) for _, m, b in train)
-    print("\n  numeral policy in TRAIN:")
-    for k, v in census.most_common():
-        print(f"    {k:<12}{v:>7,}")
+    print("\n  numeral policy:", dict(census.most_common()))
 
-    args.out_dir.mkdir(parents=True, exist_ok=True)
-
-    # ---- main mixture -------------------------------------------------------
-    main_rows, quarantine, dropped_copy = [], [], 0
+    main_rows, quarantine, dropped = [], [], 0
     for _, m, b in train:
         kind = classify(m, b)
         if kind == "verbalised":
             quarantine.append({"mar": m, "bhb": b})
             continue
         if kind == "altered":
-            continue                                   # alignment noise
+            continue
         b = match_digit_script(b, source_digit_script(m))
         if m == b and len(m.split()) <= 3:
-            dropped_copy += 1                          # kills the copy prior
+            dropped += 1
             continue
         main_rows.append({"mar": m, "bhb": b})
+    print(f"  quarantined {len(quarantine):,} verbalised, dropped {dropped:,} short copies")
 
-    print(f"\n  main mixture        {len(main_rows):>7,}")
-    print(f"  quarantined (verbalised) {quarantine.__len__():>2,}"
-          f"   <- held back: ambiguous policy, reusable as number-word data")
-    print(f"  dropped trivial short copies {dropped_copy:>5,}")
-
-    # ---- numeral-substitution augmentation ---------------------------------
     eligible = [r for r in main_rows if numerals(r["mar"])]
-    aug = []
+    aug: list[dict] = []
     while len(aug) < args.augment and eligible:
         r = rng.choice(eligible)
         got = substitute_numerals(r["mar"], r["bhb"], rng)
         if got:
             aug.append({"mar": got[0], "bhb": got[1]})
-    print(f"  numeral augmentation  {len(aug):>7,}  (form-preserving, correct by construction)")
 
-    # ---- conversational repopulation from AdiBhasha ------------------------
-    conv = []
+    conv: list[dict] = []
     if args.adibhasha.exists():
-        ad = list(csv.DictReader(args.adibhasha.open(encoding="utf-8")))
-        short = [(r["Hindi"].strip(), r["Bhili"].strip()) for r in ad
-                 if r["Hindi"].strip() and r["Bhili"].strip()
-                 and len(r["Hindi"].split()) <= 8 and r["Hindi"].strip() != r["Bhili"].strip()]
-        conv = [{"hin": h, "bhb": b} for h, b in short]
-        print(f"  AdiBhasha short/conversational {len(conv):>5,}  (Hindi<->Bhili, register the main corpus lacks)")
+        rows = csv.DictReader(args.adibhasha.open(encoding="utf-8"))
+        conv = [{"hin": h, "bhb": b} for h, b in
+                ((r["Hindi"].strip(), r["Bhili"].strip()) for r in rows)
+                if h and b and len(h.split()) <= 8 and h != b]
 
-    for name, data in (("train_main", main_rows), ("train_aug", aug),
+    print()
+    for name, rows in (("train_main", main_rows), ("train_aug", aug),
                        ("quarantine_verbalised", quarantine),
                        ("aux_conversational", conv),
                        ("test_heldout", [{"mar": m, "bhb": b} for _, m, b in test])):
-        path = args.out_dir / f"{name}.jsonl"
-        with path.open("w", encoding="utf-8") as fh:
-            for r in data:
-                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-        print(f"  wrote {len(data):>7,} -> {path}")
+        write_jsonl(args.out_dir / f"{name}.jsonl", rows)
+
+    heldout = [{"mar": m, "bhb": b} for _, m, b in test]
+    evals = {
+        "GENERAL": heldout,
+        "NUM_NAT": [r for r in heldout if numerals(r["mar"])],
+        "SHORT_NAT": [r for r in heldout if len(r["mar"].split()) <= 4],
+        # Copying scores zero here by construction, which is the point.
+        "SHORT_HARD": [r for r in heldout
+                       if len(r["mar"].split()) <= 4 and r["mar"] != r["bhb"]],
+    }
+    print()
+    for name, rows in evals.items():
+        write_jsonl(args.out_dir / f"eval_{name}.jsonl", rows)
 
 
 if __name__ == "__main__":
