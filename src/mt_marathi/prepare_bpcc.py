@@ -103,6 +103,16 @@ def main() -> None:
     with args.out.open("w", encoding="utf-8") as fh:
         for r in selected:
             fh.write(json.dumps({"eng": r["eng"], "mar": r["mar"]}, ensure_ascii=False) + "\n")
+    # Held-out slice, DISJOINT from training. Without this, arm C (education) is
+    # tested on its own corpus while arms A and B are tested only on IN22-Gen --
+    # C plays at home, A and B play away, and any C win is uninterpretable.
+    holdout = rows[args.target_rows:args.target_rows + 2000]
+    hpath = args.out.parent / "bpcc_heldout_en_mr.jsonl"
+    with hpath.open("w", encoding="utf-8") as fh:
+        for r in holdout:
+            fh.write(json.dumps({"eng": r["eng"], "mar": r["mar"]}, ensure_ascii=False) + "\n")
+    print(f"  wrote {len(holdout):,} held-out -> {hpath}")
+
     print(f"\n  wrote {len(selected):,} pairs -> {args.out}")
     if selected:
         sc = [r["labse"] for r in selected]

@@ -83,3 +83,51 @@ Whole `course_id`s are held out instead. Constraint to state plainly: only
 shiksha is spoken NPTEL transcript, not school textbook prose. No aligned
 NCERT/Balbharati parallel corpus exists publicly in any Indian language pair.
 Domain-*adjacent* to Bodhan's use case, not domain-matched.
+
+## 12. Baseline reproduces the model card exactly
+Measured on IN22-Gen, greedy, chrF++ word_order=2:
+
+| direction | ours | card | n |
+|---|---|---|---|
+| en->mar_Deva | **50.15** | 50.2 | 1024 |
+| mar_Deva->en | **62.39** | 62.3 | 1024 |
+
+I had predicted this would NOT reproduce, on the grounds that the card never
+states its tokenisation. That was wrong, and being wrong is the good outcome: an
+independently built pipeline landing within 0.1 chrF++ of the published figure
+validates the prompt contract, the IndicNLP pre-tokenisation, the chrF++
+word_order and the greedy decode settings all at once.
+
+Bootstrap 95% CI at n=1024 is **+/-0.77 chrF++** -- 13x the +/-0.06 the toolkit
+documents, confirming the correction in entry 4. Differences under ~0.8 are noise.
+
+Cross-lingual baseline (for the damage probe): en->hin 52.50, hin->en 61.88,
+en->guj 51.50, guj->en 63.12, en->tam 48.87, tam->en 56.11.
+
+Metric choice justified by our own data, not by citation: **en->tam chrF++ 48.87
+but BLEU 8.74**. Tamil is agglutinative, so word-level BLEU collapses while
+chrF++ stays informative. Same effect within Marathi: BLEU 14.35 vs Hindi 24.74
+despite near-identical chrF++ (50.2 vs 52.5).
+
+## 13. LoRA trainable parameters: 100,999,168 (1.2559%)
+`trainable params: 100,999,168 || all params: 8,042,100,000 || trainable%: 1.2559`
+-- exactly the figure in the toolkit docs, confirming target/exclude resolution
+behaved as its authors intended.
+
+My hand estimate from config.json was 77,758,464, i.e. **23.2M short**. The
+architecture model behind that estimate is therefore wrong somewhere; to be
+settled from `adapter_config.json` on the first saved checkpoint rather than
+guessed at.
+
+## 14. early_stopping_patience does not disable early stopping
+Setting `early_stopping_patience: 999` still CONSTRUCTS an
+`EarlyStoppingCallback`; large patience means it never fires, not that it is
+absent. Having also dropped `metric_for_best_model` when setting
+`load_best_model_at_end: false`, training died at `on_train_begin`:
+
+    AssertionError: EarlyStoppingCallback requires metric_for_best_model to be defined
+
+Fixed by restoring `metric_for_best_model: eval_loss` + `greater_is_better:
+false`. Cost ~$0.96 -- but the baseline eval had already completed and pushed,
+because artifacts are uploaded per-direction rather than batched at the end.
+That ordering is why a crash cost the probe and not the experiment.
