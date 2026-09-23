@@ -94,7 +94,8 @@ training:
   hub_strategy: "all_checkpoints"
   hub_private_repo: true
 
-  report_to: "none"               # CHANGED wandb->none; no W&B key in the job
+  report_to: "wandb"              # W&B key passed to the job as a secret
 
 logging:
-  report_to: "none"
+  wandb_project: "bodhan-mt-marathi"
+  report_to: "wandb"

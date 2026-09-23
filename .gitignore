@@ -7,3 +7,6 @@ training_output/
 __pycache__/
 *.pyc
 .env
+upload/
+upload_model/
+results/*.jsonl

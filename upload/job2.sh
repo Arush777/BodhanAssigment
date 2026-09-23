@@ -48,7 +48,9 @@ c["training"].update(
     save_steps=100, eval_steps=100, save_total_limit=20,
     hub_model_id=f"Arushhh/indic-translate-mr-lora-{arm}",
     hub_private_repo=False, hub_strategy="all_checkpoints",
+    run_name=f"mr-lora-{arm}",          # distinct W&B run per arm
 )
+c["logging"]["wandb_run_name"] = f"mr-lora-{arm}"
 yaml.safe_dump(c, open(f"configs/{arm}.yaml", "w"))
 PY
   python -m bodhan_genai.mt.data.render --config "configs/render_${ARM}.yaml"

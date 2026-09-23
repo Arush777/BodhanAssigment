@@ -1,0 +1,17 @@
+  reading mr/train-00000-of-00002.parquet
+  reading mr/train-00001-of-00002.parquet
+
+  filter report
+    read                     3,627,480
+    drop:bracketed_only          3,658
+    drop:caption_like              588
+    drop:digit_heavy             1,708
+    drop:length_ratio           37,146
+    drop:src_length             47,652
+    drop:src_too_few_words      59,380
+    drop:tgt_length             20,367
+    drop:tgt_not_devanagari      2,646
+    drop:url_mismatch              471
+    kept                     3,453,864   (95.2% of input)
+
+  wrote 25,000 pairs -> data/bitext/samanantar_en_mr.jsonl
