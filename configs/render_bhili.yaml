@@ -1,0 +1,45 @@
+# Marathi <-> Dehwali Bhili. Bhili is NOT one of the model's 22 served languages,
+# so extra_languages names it without touching the frozen prompt contract.
+seed: 42
+template_variant: "target_only"
+dedup: true
+
+extra_languages:
+  bhb_Deva: "Bhili"
+
+output:
+  train: "data/mt/rendered/bhili/train.jsonl"
+  dev:   "data/mt/rendered/bhili/dev.jsonl"
+  dev_fraction: 0.02
+  dev_max_rows: 800
+
+sources:
+  # Core: validated Marathi<->Bhili, digit-script normalised, trivial short
+  # copies removed, verbalised pairs quarantined out.
+  - name: "krishi-main"
+    path: "data/bhili/train_main.jsonl"
+    src_field: "mar"
+    tgt_field: "bhb"
+    src_lang: "mar_Deva"
+    tgt_lang: "bhb_Deva"
+    reverse_fraction: 1.0
+
+  # Numeral-substitution augmentation: values swapped on BOTH sides, so these
+  # are correct by construction and cover magnitudes the corpus never had.
+  - name: "numeral-aug"
+    path: "data/bhili/train_aug.jsonl"
+    src_field: "mar"
+    tgt_field: "bhb"
+    src_lang: "mar_Deva"
+    tgt_lang: "bhb_Deva"
+    reverse_fraction: 1.0
+
+  # Conversational register the agricultural corpus entirely lacks (zero
+  # greetings in 21k rows). Hindi-side, but Bhili is the target that matters.
+  - name: "adibhasha-conv"
+    path: "data/bhili/aux_conversational.jsonl"
+    src_field: "hin"
+    tgt_field: "bhb"
+    src_lang: "hin_Deva"
+    tgt_lang: "bhb_Deva"
+    reverse_fraction: 1.0

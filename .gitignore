@@ -12,3 +12,8 @@ upload_model/
 results/*.jsonl
 o.json
 opus.json
+
+data/bhili/
+upload_bhili/
+upload_bhili_model/
+tmp/
