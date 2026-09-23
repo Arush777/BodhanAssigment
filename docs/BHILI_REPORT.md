@@ -197,7 +197,63 @@ Numerals:
 Numeral-sequence match stays near 100%, so nothing broke. The gain is in digit
 script, which is where the signal lives once copying is accounted for.
 
-## 8. Limitations
+## 8. What the numbers actually get wrong, and what would fix it
+
+Scoring by value rather than digit form, across 1,774 held-out translations:
+
+| | invents a number | loses a number |
+|---|---|---|
+| base model | 5.0% | 4.8% |
+| fine-tuned | 5.1% | 4.8% |
+
+On sentences that contain numbers it is 8.2% invented and 7.0% lost, so about
+one in twelve has a number error. The fine-tune did not move it.
+
+Two mechanisms, both visible in the generations:
+
+```
+चारुलो (a verb)              -> चार ते          inserted "four"
+दुसऱ्या वर्षापासून (ordinal)   -> दोन वर्षातून      ordinal collapsed to cardinal
+```
+
+Bhili words sharing a prefix with a cardinal get read as numbers, and ordinals
+collapse into cardinals. Neither is about digit form.
+
+### Why the augmentation did not help
+
+The corpus carries a number in 40.6% of rows. The mixture as trained carries one
+in 46.4%, because every augmented row contains a number by construction (84.4%
+density). So the augmentation raised the prior toward emitting numerals while
+teaching nothing about when to withhold one. That is a plausible mechanism for
+insertion staying flat, and it is testable.
+
+### Future work, in order of expected value
+
+1. Cap numeral density at the corpus rate. Downsample the augmentation or pad it
+   with number-free rows so the mixture sits at 40% rather than 46%. One run,
+   compare insertion rate. Roughly $3 of GPU time and the cheapest test of the
+   hypothesis above.
+2. Contrastive negatives. Mine Bhili words that share a prefix with a cardinal
+   (चारुलो, पासवा and similar) and make sure their sentences are represented,
+   possibly upweighted. This teaches the distinction the model is currently
+   missing: looks like a number, is not one.
+3. Ordinal coverage. The corpus barely contains ordinals, which is why दुसऱ्या
+   becomes दोन. Generate ordinal carrier sentences the same way numerals were
+   substituted, holding the carrier fixed and varying the ordinal.
+4. A value-aware decoding guard. Compare source and output number values at
+   inference, not digit sequences, since both forms are valid. Flag or repair
+   mismatches. Deterministic, needs no training, and targets the 5% dropping
+   directly. The risk is legitimate cases where a translation properly adds or
+   removes a number, so it should flag rather than silently rewrite.
+5. A verified cardinal lexicon. The current one covers 32 distinct values and
+   misses compounds above twenty, so some word-form numbers go unscored. This
+   needs a speaker, not more mining; the automatic attempt produced candidates
+   with n=2 support.
+6. Larger targeted test sets. SHORT_HARD is 60 items, giving roughly ±13pp.
+7. Ablate the augmentation. It was never tested against a run without it, so its
+   contribution is unknown in either direction.
+
+## 9. Limitations
 
 SHORT_HARD is 60 items, giving roughly ±13pp at 95%. It shows direction, not a
 precise rate.
