@@ -3,6 +3,8 @@
   "checkpoints": [
     "checkpoint-100",
     "checkpoint-200",
-    "checkpoint-300"
+    "checkpoint-300",
+    "checkpoint-400",
+    "checkpoint-500"
   ]
 }
