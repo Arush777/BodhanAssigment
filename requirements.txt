@@ -1,0 +1,5 @@
+# Local (CPU) data-preparation only. The training environment is built inside
+# the HF Job by the Bodhan toolkit's own install.sh, which pins
+# transformers>=5.12 and vllm>=0.20 for the Gemma 4 architecture.
+pyarrow>=15
+huggingface_hub>=0.30

@@ -1,0 +1,9 @@
+.venv/
+data/hf-cache/
+data/bitext/
+data/mt/
+data/*.log
+training_output/
+__pycache__/
+*.pyc
+.env
