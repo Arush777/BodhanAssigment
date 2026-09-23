@@ -26,8 +26,18 @@ mkdir -p data/bitext && cp /workspace/in/*.jsonl data/bitext/
 for ARM in samanantar bpcc shiksha; do
   REPO="Arushhh/indic-translate-mr-lora-${ARM}"
   hf download "$REPO" --local-dir "/workspace/ad/${ARM}" || { echo "MISSING $REPO"; continue; }
+  # hub_strategy=all_checkpoints may leave the adapter only inside
+  # checkpoint-N/ subdirs. Prefer the repo root when it carries an
+  # adapter_config.json; otherwise take the highest-numbered checkpoint.
+  ADIR="/workspace/ad/${ARM}"
+  if [ ! -f "$ADIR/adapter_config.json" ]; then
+    ADIR=$(ls -d /workspace/ad/${ARM}/checkpoint-* 2>/dev/null \
+           | sort -t- -k2 -n | tail -1)
+  fi
+  [ -n "$ADIR" ] && [ -f "$ADIR/adapter_config.json" ] || { echo "NO ADAPTER for ${ARM}"; continue; }
+  echo "  using adapter: $ADIR"
   python /workspace/in/eval_baseline.py --tag "final-${ARM}" \
-      --adapter "/workspace/ad/${ARM}" --mar-samples 300 --probe-samples 300 \
+      --adapter "$ADIR" --mar-samples 300 --probe-samples 300 \
       --indomain-file edu=data/bitext/shiksha_heldout_en_mr.jsonl \
       --indomain-file news=data/bitext/bpcc_heldout_en_mr.jsonl \
       --indomain-samples 500 \

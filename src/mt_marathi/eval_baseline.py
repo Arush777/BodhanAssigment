@@ -145,6 +145,11 @@ def main() -> None:
     with engine:
         for lang in PROBE_LANGS:
             n = args.mar_samples if lang == "mar_Deva" else args.probe_samples
+            # n<=0 means "skip this language" (used by the degradation curve,
+            # which only needs Marathi). Without this guard ds.select(range(0))
+            # yields an empty corpus and score() divides by zero.
+            if n <= 0:
+                continue
             rows = ds.select(range(min(n, len(ds))))
             eng_side, ind_side = list(rows["eng_Latn"]), list(rows[lang])
 
