@@ -190,6 +190,35 @@ identical chrF++ (50.2 vs 52.5) — Marathi is morphologically richer, so exact
 word matching punishes it harder. This is why IndicTrans2 selects chrF++ as its
 primary metric, and now it is evidenced rather than cited.
 
+### Sequence-length distribution (measured, 75,000 rows)
+
+| corpus | median | p95 | p99 | max | rows >512 tok |
+|---|---|---|---|---|---|
+| samanantar | 58 | 127 | 177 | 273 | 0 |
+| bpcc | 77 | 163 | 227 | 533 | 1 |
+| shiksha | 101 | 240 | 317 | 1066 | 5 |
+
+This measurement drove a real decision. Peak VRAM without gradient checkpointing
+is ~70 GB of 80 at seq 1024, and six rows of 75,000 exceed 512 tokens — a small
+but genuine OOM risk, concentrated in the shiksha arm. Checkpointing was kept ON
+at a cost of ~40% throughput (3.02 s/it). On a fixed deadline with rented
+compute, certainty is worth more than the speedup.
+
+### Gradient checkpointing does not change the mathematics
+
+A controlled A/B at identical seed and data, before the faster run was stopped:
+
+| step | ckpt ON | ckpt OFF |
+|---|---|---|
+| 10 | 1.886 | 1.886 |
+| 30 | 1.690 | 1.690 |
+| 70 | 1.733 | 1.732 |
+
+Identical to the third decimal; the residual is floating-point non-determinism
+from kernel selection during recomputation. The throughput half of this
+comparison is **unmeasured** — the run was cancelled before a rate was recorded,
+and no figure is invented here.
+
 *(Fine-tuned arm results, degradation curves and the cross-lingual damage table
 are appended as jobs complete.)*
 
