@@ -18,3 +18,7 @@ upload*/
 # scratch
 o.json
 opus.json
+data/current_job.txt
+data/*.status
+docs/*.log
+results/checkpoints_*.json
