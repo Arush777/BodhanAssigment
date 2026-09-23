@@ -10,3 +10,5 @@ __pycache__/
 upload/
 upload_model/
 results/*.jsonl
+o.json
+opus.json
