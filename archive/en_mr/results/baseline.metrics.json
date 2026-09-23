@@ -1,0 +1,98 @@
+{
+  "en-mar_Deva": {
+    "chrf2": 50.152,
+    "chrf2_ci95": [
+      49.457,
+      51.001
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 14.35,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:none|smooth:exp|version:2.6.0",
+    "n": 1024,
+    "degenerate": 0
+  },
+  "mar_Deva-en": {
+    "chrf2": 62.39,
+    "chrf2_ci95": [
+      61.464,
+      63.177
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 37.674,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0",
+    "n": 1024,
+    "degenerate": 1
+  },
+  "en-hin_Deva": {
+    "chrf2": 52.496,
+    "chrf2_ci95": [
+      51.488,
+      53.846
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 24.742,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:none|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  },
+  "hin_Deva-en": {
+    "chrf2": 61.877,
+    "chrf2_ci95": [
+      60.363,
+      63.678
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 36.772,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  },
+  "en-guj_Gujr": {
+    "chrf2": 51.499,
+    "chrf2_ci95": [
+      50.037,
+      52.783
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 17.689,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:none|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  },
+  "guj_Gujr-en": {
+    "chrf2": 63.116,
+    "chrf2_ci95": [
+      60.254,
+      65.453
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 37.717,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  },
+  "en-tam_Taml": {
+    "chrf2": 48.867,
+    "chrf2_ci95": [
+      47.671,
+      49.971
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 8.736,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:none|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  },
+  "tam_Taml-en": {
+    "chrf2": 56.109,
+    "chrf2_ci95": [
+      54.536,
+      57.726
+    ],
+    "chrf2_signature": "nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0",
+    "bleu": 30.518,
+    "bleu_signature": "nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0",
+    "n": 300,
+    "degenerate": 0
+  }
+}

@@ -1,0 +1,19 @@
+[project]
+name = "mt-marathi-bhili"
+version = "0.1.0"
+description = "LoRA fine-tune of Bodhan indic-translate for Marathi <-> Dehwali Bhili"
+requires-python = ">=3.10"
+dependencies = ["pyarrow>=15", "huggingface_hub>=0.30", "sacrebleu>=2.4", "matplotlib>=3.8"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

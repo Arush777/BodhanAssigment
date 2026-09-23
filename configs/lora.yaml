@@ -41,8 +41,8 @@ lora:
   use_dora: false
 
 data:
-  train_file: "data/mt/rendered/train.jsonl"
-  dev_file: "data/mt/rendered/dev.jsonl"
+  train_file: "data/mt/rendered/bhili/train.jsonl"
+  dev_file: "data/mt/rendered/bhili/dev.jsonl"
   cache_dir: "data/mt/cache"
   num_proc: 12                    # CHANGED 16->12; a100-large has 12 vCPU
   shuffle_seed: 42
@@ -50,7 +50,7 @@ data:
 resume: true
 
 training:
-  output_dir: "training_output/mr-lora"
+  output_dir: "training_output/bhili-lora"
   num_train_epochs: 1             # CHANGED 3->1. We want the degradation curve within
                                   # one epoch, not a converged model.
   learning_rate: 1.0e-4
@@ -95,12 +95,17 @@ training:
   # Ephemeral disk: an HF Job's filesystem is destroyed on exit. Anything not
   # pushed to the Hub mid-run is A100 time set on fire.
   push_to_hub: true
-  hub_model_id: "Arushhh/indic-translate-mr-lora"
+  hub_model_id: "Arushhh/indic-translate-mar-bhili-lora"
   hub_strategy: "all_checkpoints"
   hub_private_repo: true
 
-  report_to: "wandb"              # W&B key passed to the job as a secret
+  # W&B disabled: the toolkit makes a wandb failure fatal to training, and it
+  # already cost one run -- WANDB_ENTITY must be the team namespace
+  # (arushsharma536-spe-iit), not the username, or init raises
+  # "entity ... not found during upsertBucket". Every metric is on stdout
+  # anyway, and mt_marathi.curves reconstructs the plots from the job log.
+  report_to: "none"
 
 logging:
-  wandb_project: "bodhan-mt-marathi"
-  report_to: "wandb"
+  wandb_project: "bodhan-mar-bhili"
+  report_to: "none"
