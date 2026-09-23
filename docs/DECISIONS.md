@@ -131,3 +131,40 @@ Fixed by restoring `metric_for_best_model: eval_loss` + `greater_is_better:
 false`. Cost ~$0.96 -- but the baseline eval had already completed and pushed,
 because artifacts are uploaded per-direction rather than batched at the end.
 That ordering is why a crash cost the probe and not the experiment.
+
+## 15. Gradient checkpointing: measured both ways, kept ON
+With checkpointing ON the observed rate was **3.02 s/it**, putting three
+800-step arms at ~2.5h. The VRAM budget suggested large headroom, so it was
+disabled to reclaim throughput.
+
+Measuring the actual sequence-length distribution changed the picture:
+
+| corpus | median | p95 | p99 | max | rows >512 tok |
+|---|---|---|---|---|---|
+| samanantar | 58 | 127 | 177 | 273 | 0 |
+| bpcc | 77 | 163 | 227 | 533 | 1 |
+| shiksha | 101 | 240 | 317 | 1066 | 5 |
+
+Six rows of 75,000 exceed 512 tokens. Typical batches sit at 31-35 GB, but a
+batch containing one long row peaks near **70 GB of 80** without checkpointing
+-- a small but real OOM risk, concentrated in the shiksha arm. Checkpointing was
+re-enabled: on a fixed deadline with rented compute, certainty beats a speedup.
+
+**Correction to an earlier claim.** I had said an OOM "would surface on step 1,
+so the downside is ~30 seconds." That is wrong: OOM risk scales with the longest
+sequence in a batch, and batches are randomly composed, so it could strike at
+any step.
+
+**Empirical bonus.** The disabled run had already begun stepping, giving a
+controlled A/B at identical seed and data:
+
+| step | ckpt ON | ckpt OFF |
+|---|---|---|
+| 10 | 1.886 | 1.886 |
+| 30 | 1.690 | 1.690 |
+| 70 | 1.733 | 1.732 |
+
+Identical to the third decimal. Gradient checkpointing does not change the
+mathematics, only the memory/compute path -- confirmed, not assumed. The
+throughput half of the comparison remains **unmeasured** for the OFF case; the
+run was cancelled before a rate was recorded, and no number is invented here.
