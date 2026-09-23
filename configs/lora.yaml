@@ -65,10 +65,15 @@ training:
   # Checkpoint cadence drives the whole experiment: each saved adapter is one
   # point on the quality-vs-steps curve. ~1563 steps/epoch at effective batch 32.
   eval_strategy: "steps"
-  eval_steps: 250
+  eval_steps: 100
   save_strategy: "steps"
-  save_steps: 250                 # -> ~6 checkpoints
-  save_total_limit: 8             # CHANGED 3->8; we need the early ones, that is the point
+  save_steps: 100                 # CHANGED 250->100. Degradation on an already-converged
+                                  # model is fastest in the first few hundred steps and
+                                  # flat after, so we sample densely early and evaluate at
+                                  # LOG-spaced points (100/200/400/800/1600) rather than
+                                  # uniformly -- same number of eval points, ~3x the
+                                  # resolution where the curve actually moves.
+  save_total_limit: 20            # CHANGED 3->20; the early checkpoints ARE the experiment
 
   logging_steps: 10
   load_best_model_at_end: false   # CHANGED true->false. Best-by-eval_loss would discard
