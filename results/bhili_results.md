@@ -1,4 +1,4 @@
-# Marathi ↔ Dehwali Bhili — results
+# Marathi to Dehwali Bhili: results
 
 chrF++ uses `word_order=2`. COPY = echo the source unchanged.
 `spurious_copy` = of the items whose reference differs from the source,
@@ -8,7 +8,7 @@ the fraction where the model simply echoed the source back.
 
 | test set | direction | COPY | base | fine-tuned | FT − COPY |
 |---|---|---|---|---|---|
-| GENERAL | mar-bhb | 42.1 | 40.0 | 49.0 | **+6.8** |
+| GENERAL | mar-bhb | 42.1 | 40.0 | 49.0 | **+6.9** |
 | GENERAL | bhb-mar | 40.5 | 40.9 | 60.3 | **+19.8** |
 | NUM_NAT | mar-bhb | 46.3 | 44.3 | 52.0 | **+5.7** |
 | NUM_NAT | bhb-mar | 44.7 | 45.0 | 65.3 | **+20.6** |
@@ -33,8 +33,8 @@ the fraction where the model simply echoed the source back.
 ## Numerals
 
 `nsem` is numeral-sequence exact match against the SOURCE. A copying model
-scores 100% by construction, so this metric cannot show improvement — it
-only shows breakage. The signal is in digit-script match, and the reference's
+scores 100% by construction, so this metric cannot show improvement, only
+breakage. The signal is in digit-script match, and the reference's
 own preservation rate is the ceiling.
 
 | test set | direction | ref. ceiling | base nsem | FT nsem | base script | FT script |

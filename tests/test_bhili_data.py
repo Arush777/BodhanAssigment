@@ -3,7 +3,7 @@
 Numeral handling is the whole point of this task, so the substitution
 augmentation gets the most attention: it generates ~6k training rows, and if it
 ever desynchronised the two sides it would teach the model to hallucinate
-numbers — the exact failure we were asked to fix.
+numbers, which is the exact failure this work was meant to fix.
 """
 
 from __future__ import annotations
@@ -79,3 +79,25 @@ class TestSubstitution:
         got = substitute_numerals("१० किलो लागते.", "१० किलो जोवे.", rng)
         assert got is not None
         assert source_digit_script(got[0]) == "deva"
+
+
+class TestNumberValues:
+    """Number accuracy must count a value as correct in either form."""
+
+    def test_digits_and_words_agree(self):
+        from mt_marathi.numbers import values
+        assert values("20 किलो") == values("वीस किलो")
+        assert values("5 ते 8") == values("पाच ते आठ")
+
+    def test_digit_script_is_irrelevant(self):
+        from mt_marathi.numbers import values
+        assert values("१० किलो") == values("10 किलो")
+
+    def test_no_substring_matches(self):
+        # तीस (30) sits inside चोवतीस (34); matching it would be wrong.
+        from mt_marathi.numbers import values
+        assert values("चोवतीस") == values("३४")
+
+    def test_list_enumerators_are_not_numbers(self):
+        from mt_marathi.numbers import values
+        assert values("१) जमीन सारखी") == values("जमीन सारखी")

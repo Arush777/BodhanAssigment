@@ -1,11 +1,8 @@
-"""Extract training curves from a job log into CSV + a plot.
+"""Recover training curves from a job log into CSV + a plot.
 
-The Bodhan toolkit's `scripts/mt/train_lora.sh` sets `WANDB_MODE=offline` by
-default -- sensible for air-gapped training nodes, but on an ephemeral HF Job it
-means the run directory is destroyed on exit and nothing reaches the cloud.
-
-Every metric W&B would have recorded is still printed to stdout, so the job log
-is a complete record. This recovers it.
+The toolkit's train_lora.sh sets WANDB_MODE=offline and HF Jobs disk is
+ephemeral, so the W&B run directory dies with the job. Everything W&B would have
+logged is on stdout, so the job log is the record.
 
     python -m mt_marathi.curves data/job2.log --out results/
 """
@@ -23,7 +20,7 @@ DICT_RE = re.compile(r"\{'(?:loss|eval_loss)'.*?\}")
 
 
 def parse(log: Path) -> list[dict]:
-    """Walk the log, tagging each metric dict with the arm it belongs to."""
+    """Metric dicts from the log, each tagged with the arm it was printed under."""
     rows, arm = [], "unknown"
     for line in log.read_text(errors="ignore").splitlines():
         m = ARM_RE.search(line)
@@ -35,8 +32,8 @@ def parse(log: Path) -> list[dict]:
                 rec = ast.literal_eval(d)
             except (ValueError, SyntaxError):
                 continue
-            # The trainer prints numbers as strings; coerce what we can.
             out = {"arm": arm, "split": "eval" if "eval_loss" in rec else "train"}
+            # trainer prints some numbers as strings
             for k, v in rec.items():
                 try:
                     out[k] = float(v)

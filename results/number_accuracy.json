@@ -1,0 +1,50 @@
+{
+  "GENERAL.mar-bhb": {
+    "ceiling": 90.6,
+    "base": 90.1,
+    "ft": 90.1,
+    "n": 181
+  },
+  "GENERAL.bhb-mar": {
+    "ceiling": 90.0,
+    "base": 90.6,
+    "ft": 89.4,
+    "n": 170
+  },
+  "NUM_NAT.mar-bhb": {
+    "ceiling": 88.7,
+    "base": 88.2,
+    "ft": 88.2,
+    "n": 355
+  },
+  "NUM_NAT.bhb-mar": {
+    "ceiling": 88.8,
+    "base": 89.7,
+    "ft": 90.0,
+    "n": 331
+  },
+  "SHORT_NAT.mar-bhb": {
+    "ceiling": 85.7,
+    "base": 85.7,
+    "ft": 78.6,
+    "n": 14
+  },
+  "SHORT_NAT.bhb-mar": {
+    "ceiling": 91.7,
+    "base": 91.7,
+    "ft": 91.7,
+    "n": 12
+  },
+  "SHORT_HARD.mar-bhb": {
+    "ceiling": 80.0,
+    "base": 80.0,
+    "ft": 70.0,
+    "n": 10
+  },
+  "SHORT_HARD.bhb-mar": {
+    "ceiling": 87.5,
+    "base": 87.5,
+    "ft": 87.5,
+    "n": 8
+  }
+}

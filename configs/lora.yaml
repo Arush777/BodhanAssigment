@@ -1,4 +1,4 @@
-# LoRA finetune of bodhan-ai/indic-translate on filtered en<->mr Samanantar.
+# LoRA finetune of bodhan-ai/indic-translate for Marathi <-> Dehwali Bhili.
 #
 # Derived from the toolkit's provisional configs/mt/train/lora.yaml.
 # Every delta from that default is marked CHANGED with a reason, because the
@@ -14,7 +14,7 @@ model:
   attn_implementation: "sdpa"
   # ON deliberately. Measured peak VRAM without it is ~70 GB of 80 at seq 1024,
   # and 6 of 75,000 rows exceed 512 tokens -- a real if small OOM risk concentrated
-  # in the shiksha arm. Checkpointing costs ~40% throughput (3.02 s/it vs an
+  # on long rows. Checkpointing costs roughly 40% throughput but removes the
   # unmeasured faster rate) and buys certainty. On a fixed deadline with a rented
   # GPU, certainty is worth more than the speedup.
   gradient_checkpointing: true

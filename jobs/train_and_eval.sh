@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Marathi <-> Dehwali Bhili: baseline -> train -> evaluate, in ONE job.
-#
-# Single job on purpose: each job pays ~5 min of A100 time pulling the 15.9 GB
-# base model. Three separate jobs would spend ~$1 on I/O for no benefit.
-#
-# Order matters. The baseline runs FIRST and pushes as it goes, so a crash
-# during training still leaves the most load-bearing artifact banked.
+# Marathi <-> Dehwali Bhili: baseline, train, evaluate, in one job. Split across
+# three jobs each would re-pull the 15.9 GB base model at ~5 min of A100 time.
 set -euxo pipefail
 export HF_HOME=/workspace/.hf HF_HUB_CACHE=/workspace/.hf/hub
 export RESULTS_REPO="${RESULTS_REPO:-Arushhh/indic-translate-mar-bhili-lora}"
@@ -17,11 +12,12 @@ nvidia-smi
 
 git clone --depth 1 https://github.com/Bodhan-AI/bodhan_genai /workspace/tk
 cd /workspace/tk
+# --no-flash-attn skips a source build that MT has no use for
 ./install.sh --extras all-mt --no-flash-attn
 source .venv/bin/activate
 pip install -q sacrebleu indic-nlp-library
 
-# ---- preflight: fail in ~90s, not 40 minutes -------------------------------
+# preflight: fail in ~90s rather than 40 minutes in
 python - <<'PY'
 import torch, transformers
 from packaging.version import parse
@@ -42,11 +38,10 @@ mkdir -p data/bhili configs
 cp /workspace/in/data/*.jsonl data/bhili/
 cp /workspace/in/configs/*.yaml configs/
 
-# ---- 1. BASELINE: base model zero-shot on a language it has never seen -----
-# Bhili is not among the 22 served languages; extra_languages names it.
+# Baseline first, pushing as it goes, so a crash in training still leaves it
+# banked. Bhili is not one of the 22 served languages; extra_languages names it.
 python /workspace/in/eval_bhili.py --tag baseline --max-items 400
 
-# ---- 2. TRAIN ---------------------------------------------------------------
 python -m bodhan_genai.mt.data.render --config configs/render_bhili.yaml --dry-run
 python -m bodhan_genai.mt.data.render --config configs/render_bhili.yaml
 wc -l data/mt/rendered/bhili/train.jsonl data/mt/rendered/bhili/dev.jsonl
@@ -60,7 +55,6 @@ yaml.safe_dump(c, open("configs/lora_bhili.yaml", "w"))
 PY
 scripts/mt/train_lora.sh configs/lora_bhili.yaml
 
-# ---- 3. EVALUATE the finetune, same sets, same metrics ---------------------
 ADIR=training_output/bhili-lora
 if [ ! -f "$ADIR/adapter_config.json" ]; then
   ADIR=$(ls -d training_output/bhili-lora/checkpoint-* 2>/dev/null | sort -t- -k2 -n | tail -1)

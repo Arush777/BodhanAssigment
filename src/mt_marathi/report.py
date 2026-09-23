@@ -1,11 +1,4 @@
-"""Assemble the Marathi<->Bhili results table from the metrics on the Hub.
-
-Every row is reported against a COPY baseline. That is not decoration: Bhili is
-lexically close enough to Marathi that echoing the input is a strong policy, and
-on the unmodified model it actually WINS on every Marathi->Bhili test set. A
-table without the COPY row would let a model that learned to copy look like a
-model that learned to translate.
-"""
+"""Assemble the Marathi<->Bhili results table from the metrics on the Hub."""
 
 from __future__ import annotations
 
@@ -37,11 +30,13 @@ def main() -> None:
         print("  no baseline metrics; nothing to assemble")
         return
 
-    lines = ["# Marathi ↔ Dehwali Bhili — results", "",
+    lines = ["# Marathi to Dehwali Bhili: results", "",
              "chrF++ uses `word_order=2`. COPY = echo the source unchanged.",
              "`spurious_copy` = of the items whose reference differs from the source,",
              "the fraction where the model simply echoed the source back.", ""]
 
+    # Every row carries COPY: on mar->bhb the unmodified model loses to plain
+    # echoing, so a table without it flatters a model that only learned to copy.
     lines += ["## chrF++ against the COPY baseline", "",
               "| test set | direction | COPY | base | fine-tuned | FT − COPY |",
               "|---|---|---|---|---|---|"]
@@ -53,9 +48,10 @@ def main() -> None:
             f = ft.get(k, {}).get("chrf2")
             if c is None:
                 continue
-            delta = f"{f - c:+.1f}" if f is not None else "—"
+            # from the displayed values, so the column adds up on the page
+            delta = f"{round(f, 1) - round(c, 1):+.1f}" if f is not None else "n/a"
             lines.append(f"| {s} | {d} | {c:.1f} | {b:.1f} | "
-                         f"{f'{f:.1f}' if f is not None else '—'} | **{delta}** |")
+                         f"{f'{f:.1f}' if f is not None else 'n/a'} | **{delta}** |")
 
     lines += ["", "## Spurious copy rate (lower is better)", "",
               "| test set | direction | base | fine-tuned |", "|---|---|---|---|"]
@@ -67,12 +63,12 @@ def main() -> None:
             if b is None:
                 continue
             lines.append(f"| {s} | {d} | {b:.1f}% | "
-                         f"{f'{f:.1f}%' if f is not None else '—'} |")
+                         f"{f'{f:.1f}%' if f is not None else 'n/a'} |")
 
     lines += ["", "## Numerals", "",
               "`nsem` is numeral-sequence exact match against the SOURCE. A copying model",
-              "scores 100% by construction, so this metric cannot show improvement — it",
-              "only shows breakage. The signal is in digit-script match, and the reference's",
+              "scores 100% by construction, so this metric cannot show improvement, only",
+              "breakage. The signal is in digit-script match, and the reference's",
               "own preservation rate is the ceiling.", "",
               "| test set | direction | ref. ceiling | base nsem | FT nsem | base script | FT script |",
               "|---|---|---|---|---|---|---|"]
@@ -82,7 +78,7 @@ def main() -> None:
             b, f = base.get(k, {}), ft.get(k, {})
             if "ref_preserves" not in b:
                 continue
-            g = lambda src, key: f"{src[key]:.1f}" if key in src else "—"
+            g = lambda src, key: f"{src[key]:.1f}" if key in src else "n/a"
             lines.append(f"| {s} | {d} | {b['ref_preserves']:.1f}% | {g(b,'nsem')} | {g(f,'nsem')} "
                          f"| {g(b,'digit_script_match')} | {g(f,'digit_script_match')} |")
 
